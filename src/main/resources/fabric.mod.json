@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "miniworld",
+  "version": "${version}",
+  "name": "Grey Mini World",
+  "description": "Adds per-stick private 15x15x15 rooms reached with a grey stick.",
+  "authors": [
+    "iguiyo"
+  ],
+  "license": "CC0-1.0",
+  "icon": "assets/miniworld/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.miniworld.Miniworld"
+    ],
+    "client": [
+      "com.miniworld.client.MiniworldClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": ">=0.163.0+26.3"
+  }
+}

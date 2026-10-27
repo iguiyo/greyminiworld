@@ -1,0 +1,14 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"key": {
+		"#": "minecraft:netherite_ingot"
+	},
+	"pattern": [
+		"#",
+		"#"
+	],
+	"result": {
+		"id": "miniworld:gray_stick",
+		"count": 1
+	}
+}

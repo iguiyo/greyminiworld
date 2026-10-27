@@ -1,0 +1,8 @@
+{
+	"block.miniworld.gray_block": "灰色方块",
+	"item.miniworld.gray_stick": "灰色木棍",
+	"dimension.miniworld.miniworld": "灰色小空间",
+	"message.miniworld.entered": "已进入灰色小空间，再次右键灰色木棍返回。",
+	"message.miniworld.returned": "已返回主世界出生点。",
+	"message.miniworld.dimension_missing": "灰色小空间维度加载失败。"
+}

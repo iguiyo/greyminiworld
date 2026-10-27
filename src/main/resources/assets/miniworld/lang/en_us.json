@@ -1,0 +1,8 @@
+{
+	"block.miniworld.gray_block": "Grey Block",
+	"item.miniworld.gray_stick": "Grey Stick",
+	"dimension.miniworld.miniworld": "Grey Mini World",
+	"message.miniworld.entered": "Entered the Grey Mini World. Right-click the Grey Stick again to return.",
+	"message.miniworld.returned": "Returned to the overworld spawn.",
+	"message.miniworld.dimension_missing": "Failed to load the Grey Mini World dimension."
+}
