@@ -6,6 +6,8 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -19,13 +21,21 @@ import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.phys.Vec3;
 
+@SuppressWarnings("resource")
 public final class MiniworldDimension {
+
 	public static final ResourceKey<Level> LEVEL_KEY = ResourceKey.create(Registries.DIMENSION, Miniworld.id("miniworld"));
 	private static final int SIZE = 15;
 	private static final int FLOOR_Y = 60;
 	private static final int ROOM_SPACING = 32;
 	private static final int ROOM_RANGE = 4096;
 	private static final String ROOM_ID = "miniworld_room_id";
+	private static final String RETURN_DIMENSION = "miniworld_return_dimension";
+	private static final String RETURN_X = "miniworld_return_x";
+	private static final String RETURN_Y = "miniworld_return_y";
+	private static final String RETURN_Z = "miniworld_return_z";
+	private static final String RETURN_YAW = "miniworld_return_yaw";
+	private static final String RETURN_PITCH = "miniworld_return_pitch";
 
 	private MiniworldDimension() {
 	}
@@ -35,6 +45,7 @@ public final class MiniworldDimension {
 		ServerLevel world = server.getLevel(LEVEL_KEY);
 		if (world == null) return;
 
+		rememberReturnPoint(player, stack);
 		RoomOrigin origin = roomOrigin(ensureRoomId(stack));
 		ensureRoom(world, origin);
 		teleport(
@@ -47,7 +58,15 @@ public final class MiniworldDimension {
 	}
 
 	public static void leave(ServerPlayer player, ItemStack stack) {
-		ServerLevel overworld = player.level().getServer().overworld();
+		MinecraftServer server = player.level().getServer();
+		ReturnPoint target = readReturnPoint(server, stack);
+		clearReturnPoint(stack);
+		if (target != null) {
+			teleport(player, target.level(), target.pos(), target.yaw(), target.pitch());
+			return;
+		}
+
+		ServerLevel overworld = server.overworld();
 		LevelData.RespawnData spawn = overworld.getRespawnData();
 		BlockPos pos = spawn.pos();
 		teleport(player, overworld, new Vec3(pos.getX() + 0.5D, pos.getY() + 0.1D, pos.getZ() + 0.5D), spawn.yaw(), spawn.pitch());
@@ -81,6 +100,53 @@ public final class MiniworldDimension {
 
 		String roomId = data.copyTag().getStringOr(ROOM_ID, "");
 		return roomId.isEmpty() ? null : roomId;
+	}
+
+	private static void rememberReturnPoint(ServerPlayer player, ItemStack stack) {
+		if (player.level().dimension().equals(LEVEL_KEY)) return;
+
+		String dimension = player.level().dimension().identifier().toString();
+		Vec3 pos = player.position();
+		float yaw = player.getYRot();
+		float pitch = player.getXRot();
+		CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+			tag.putString(RETURN_DIMENSION, dimension);
+			tag.putDouble(RETURN_X, pos.x);
+			tag.putDouble(RETURN_Y, pos.y);
+			tag.putDouble(RETURN_Z, pos.z);
+			tag.putFloat(RETURN_YAW, yaw);
+			tag.putFloat(RETURN_PITCH, pitch);
+		});
+	}
+
+	private static ReturnPoint readReturnPoint(MinecraftServer server, ItemStack stack) {
+		CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+		if (data == null) return null;
+
+		CompoundTag tag = data.copyTag();
+		Identifier dimensionId = Identifier.tryParse(tag.getStringOr(RETURN_DIMENSION, ""));
+		if (dimensionId == null) return null;
+
+		ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimensionId));
+		if (level == null || level.dimension().equals(LEVEL_KEY)) return null;
+
+		Vec3 pos = new Vec3(
+			tag.getDoubleOr(RETURN_X, 0.0D),
+			tag.getDoubleOr(RETURN_Y, 0.0D),
+			tag.getDoubleOr(RETURN_Z, 0.0D)
+		);
+		return new ReturnPoint(level, pos, tag.getFloatOr(RETURN_YAW, 0.0F), tag.getFloatOr(RETURN_PITCH, 0.0F));
+	}
+
+	private static void clearReturnPoint(ItemStack stack) {
+		CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+			tag.remove(RETURN_DIMENSION);
+			tag.remove(RETURN_X);
+			tag.remove(RETURN_Y);
+			tag.remove(RETURN_Z);
+			tag.remove(RETURN_YAW);
+			tag.remove(RETURN_PITCH);
+		});
 	}
 
 	private static RoomOrigin roomOrigin(String roomId) {
@@ -137,5 +203,8 @@ public final class MiniworldDimension {
 	}
 
 	private record RoomOrigin(int x, int z) {
+	}
+
+	private record ReturnPoint(ServerLevel level, Vec3 pos, float yaw, float pitch) {
 	}
 }
